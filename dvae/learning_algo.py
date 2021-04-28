@@ -97,6 +97,8 @@ class LearningAlgorithm():
         elif self.model_name == 'DSAE':
             self.model = build_DSAE(cfg=self.cfg, device=self.device)
         
+    def load_state_dict(self, state_dict_file):
+        self.model.load_state_dict(torch.load(state_dict_file, map_location=self.device))
 
     def init_optimizer(self):
 
