@@ -549,16 +549,11 @@ class LearningAlgorithm():
         hop = self.STFT_dict['hop']
         wlen = self.STFT_dict['wlen']
         win = np.sin(np.arange(0.5, wlen+0.5) / wlen * np.pi)
-        trim = self.STFT_dict['trim']
         
         # Read original audio file
         x, fs_x = sf.read(audio_orig)
         if fs != fs_x:
             raise ValueError('Unexpected sampling rate')
-
-        # Silence triming
-        if trim:
-            x, _ = librosa.effects.trim(x, top_db=30)
 
         # Scaling
         scale = np.max(np.abs(x))
@@ -583,8 +578,7 @@ class LearningAlgorithm():
         x_recon = librosa.istft(X_recon, hop_length=hop, win_length=wlen, window=win, length=x.shape[0])
         
         # Wrtie audio file
-        scale_norm = 1 / (np.maximum(np.max(np.abs(x_recon)), np.max(np.abs(x)))) * 0.9
-        sf.write(audio_recon, scale_norm*x_recon, fs_x)
+        sf.write(audio_recon, scale*x_recon, fs_x)
 
     
     def eval(self, audio_ref, audio_est, metric='all'):
