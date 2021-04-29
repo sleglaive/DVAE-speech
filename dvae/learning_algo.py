@@ -580,7 +580,7 @@ class LearningAlgorithm():
 
         # Re-synthesis
         X_recon = np.sqrt(data_recon) * np.exp(1j * np.angle(X))
-        x_recon = librosa.istft(X_recon, hop_length=hop, win_length=wlen, window=win)
+        x_recon = librosa.istft(X_recon, hop_length=hop, win_length=wlen, window=win, length=x.shape[0])
         
         # Wrtie audio file
         scale_norm = 1 / (np.maximum(np.max(np.abs(x_recon)), np.max(np.abs(x)))) * 0.9

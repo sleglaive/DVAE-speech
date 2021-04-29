@@ -24,7 +24,7 @@ setup(
     packages=find_packages(),
     # package_dir={'dvae', 'dvae'},
     install_requires=[
-        # 'numpy',
+        'numpy',
         'matplotlib',
         'soundfile',
         'librosa',
