@@ -1,0 +1,44 @@
+number of model parameters:581921
+
+
+
+
+RVAE(
+  (activation): Tanh()
+  (mlp_x_gx): Sequential(
+    (Identity): Identity()
+  )
+  (rnn_g_x): LSTM(513, 128)
+  (mlp_z_gz): Sequential(
+    (Identity): Identity()
+  )
+  (rnn_g_z): LSTM(16, 128)
+  (mlp_g_z): Sequential(
+    (linear0): Linear(in_features=256, out_features=128, bias=True)
+    (activation0): Tanh()
+    (dropout0): Dropout(p=0.0, inplace=False)
+  )
+  (inf_mean): Linear(in_features=128, out_features=16, bias=True)
+  (inf_logvar): Linear(in_features=128, out_features=16, bias=True)
+  (mlp_z_h): Sequential(
+    (Identity): Identity()
+  )
+  (rnn_h): LSTM(16, 128)
+  (mlp_h_x): Sequential(
+    (Identity): Identity()
+  )
+  (gen_logvar): Linear(in_features=128, out_features=513, bias=True)
+)
+Tanh()
+Identity()
+LSTM(513, 128)
+Identity()
+LSTM(16, 128)
+Linear(in_features=256, out_features=128, bias=True)
+Dropout(p=0.0, inplace=False)
+Linear(in_features=128, out_features=16, bias=True)
+Linear(in_features=128, out_features=16, bias=True)
+Identity()
+LSTM(16, 128)
+Identity()
+Linear(in_features=128, out_features=513, bias=True)

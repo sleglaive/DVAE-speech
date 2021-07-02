@@ -1,0 +1,29 @@
+number of model parameters:138273
+
+
+
+
+VAE(
+  (activation): Tanh()
+  (mlp_x_z): Sequential(
+    (linear0): Linear(in_features=513, out_features=128, bias=True)
+    (activation0): Tanh()
+    (dropout0): Dropout(p=0.0, inplace=False)
+  )
+  (inf_mean): Linear(in_features=128, out_features=16, bias=True)
+  (inf_logvar): Linear(in_features=128, out_features=16, bias=True)
+  (mlp_z_x): Sequential(
+    (linear0): Linear(in_features=16, out_features=128, bias=True)
+    (activation0): Tanh()
+    (dropout0): Dropout(p=0.0, inplace=False)
+  )
+  (gen_logvar): Linear(in_features=128, out_features=513, bias=True)
+)
+Tanh()
+Linear(in_features=513, out_features=128, bias=True)
+Dropout(p=0.0, inplace=False)
+Linear(in_features=128, out_features=16, bias=True)
+Linear(in_features=128, out_features=16, bias=True)
+Linear(in_features=16, out_features=128, bias=True)
+Dropout(p=0.0, inplace=False)
+Linear(in_features=128, out_features=513, bias=True)
