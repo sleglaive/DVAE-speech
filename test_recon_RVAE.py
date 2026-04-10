@@ -8,13 +8,14 @@ Created on Mon Aug 24 10:14:22 2020
 
 import os
 import numpy as np
+np.random.seed(0)
 import torch
 from dvae.utils import myconf
 import librosa
 import librosa.display
 import soundfile as sf
 from dvae.model import build_VAE, build_DKF, build_KVAE, build_STORN, build_VRNN, build_SRNN, build_RVAE, build_DSAE
-
+from mpl_toolkits.axes_grid1 import make_axes_locatable
 import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
@@ -23,8 +24,9 @@ plt.close('all')
 
 #%%
 
+model_dir = './saved_model/WSJ0_2019-07-15-10h01_origRVAE_NonCausal_latent_dim=16_F'
 #model_dir = './saved_model/WSJ0_2019-07-15-10h01_origRVAE_NonCausal_latent_dim=16_F'
-model_dir = './saved_model/WSJ0_2020-09-29-14h48_RVAE-NonCausal_z_dim=16'
+# model_dir = './saved_model/WSJ0_2020-09-29-14h48_RVAE-NonCausal_z_dim=16'
 
 # find config file and training weight
 cfg_file = os.path.join(model_dir, 'config.ini')
@@ -86,7 +88,7 @@ win = np.sin(np.arange(.5,wlen-.5+1)/wlen*np.pi) # sine analysis window
 file_list = librosa.util.find_files('/data/datasets/clean_speech/wsj0_si_dt_05', ext='wav')
 
 
-n_files = 50
+n_files = 20
 
 for n in np.arange(n_files):
     
@@ -98,7 +100,7 @@ for n in np.arange(n_files):
     x, _ = librosa.effects.trim(x, top_db=30)
     
     x_orig = x
-    x = x[:int(2*fs)]
+    # x = x[:int(2*fs)]
     
     X = librosa.stft(x, n_fft=nfft, hop_length=hop, 
                                  win_length=wlen,
@@ -130,77 +132,96 @@ for n in np.arange(n_files):
 
         # main part
         z, z_mean, z_logvar = model.inference(x)
-        y = model.generation_x(z)
-        data_recon = y.cpu().numpy()
+        y = model.generation_x(z_mean)
     
-    
-    #%% Precition
-            
-        z = torch.cat((z, torch.randn(seq_len, 1, z_dim).to(device)), dim=0)
-        
-        # 1. z_t to h_t
-        z_h = model.mlp_z_h(z)
-        
-        # 2. h_t recurrence
-        h, _ = model.rnn_h(z_h)
-        
-        # 3. h_t to y_t
-        hx = model.mlp_h_x(h)
-        logvar_x = model.gen_logvar(hx)
-        var_x = torch.exp(logvar_x).squeeze()
-        
-        if sample_x:
-            # sample the complex gaussian distribution
-            x_cplx_r = torch.sqrt(var_x/2)*torch.randn_like(var_x).to(device) 
-            x_cplx_i = torch.sqrt(var_x/2)*torch.randn_like(var_x).to(device) 
-            x = x_cplx_r**2 + x_cplx_i**2
-        else:
-            # or simply reinject the variance
-            x = var_x
-            
-        x = x.detach().cpu().numpy()
-        
-#%%
-            
-    power_spec = x.T    
-    
-    mag_spec = np.sqrt(power_spec)
-        
-        
-        
-    # s_inv = librosa.griffinlim(mag_spec, n_iter=100, hop_length=hop, 
-                               # win_length=wlen, window=win)
-    
-    plt.figure(figsize=(20,15))
-    
-    # plt.subplot(2,1,1)
-    librosa.display.specshow(librosa.power_to_db(power_spec), sr=fs, 
-                                                 hop_length=hop, 
-                                                 y_axis='linear', 
-                                                 x_axis='time')
-    plt.set_cmap('magma')
 
-    axes = plt.gca()
-    # axes.set_ylim([0,4000])
     
-    plt.xticks(fontsize=16)
-    plt.yticks(fontsize=16)
+            
+#%%
     
-    plt.title(model_name, fontsize=24)
+    data_recon = y.cpu().numpy().squeeze()
+    data_recon = data_recon.T
+    data_orig = data_orig.cpu().numpy()
     
-    plt.ylabel('frequency (Hz)', fontsize=24)
-    plt.xlabel('time (s)', fontsize=24)
+
+    c_max = np.max((np.max(10*np.log10(data_orig)), np.max(10*np.log10(data_recon))))
+    c_min = c_max - 80
     
     
-    # plt.clim((-30, 40))
+    fig = plt.figure(figsize=(20, 15))
+    gs = fig.add_gridspec(nrows=3, ncols=1, height_ratios=[3, 1, 3])
     
-    plt.colorbar()
+    ax1 = fig.add_subplot(gs[0])
+    ax2 = fig.add_subplot(gs[1])
+    ax3 = fig.add_subplot(gs[2])
     
-    plt.tight_layout()
+    # --- Top plot ---
+    img1 = librosa.display.specshow(
+        librosa.power_to_db(data_orig),
+        sr=fs,
+        hop_length=hop,
+        y_axis='linear',
+        x_axis='time',
+        cmap='magma',
+        ax=ax1
+    )
+    # ax1.set_cmap('magma')
+    img1.set_clim(c_min, c_max)
+    ax1.set_ylabel('frequency (Hz)', fontsize=24)
+    ax1.set_xticks([])
+    ax1.set_xlabel('', fontsize=24)
+    ax1.tick_params(labelsize=16)
+    divider1 = make_axes_locatable(ax1)
+    cax1 = divider1.append_axes("right", size="1.5%", pad=0.1) 
+    cb1 = fig.colorbar(img1, cax=cax1)
+    cb1.ax.tick_params(labelsize=16)
+    ax1.set_title('Original spectrogram', fontsize=24)
     
-    figure_file = '/data/tmp/pred_speech_rvae_'+ str(n+1) + '.png'
-    plt.savefig(figure_file) 
+    # --- Middle (smaller) plot ---
+    img2 = ax2.imshow(
+        z_mean.detach().cpu().numpy().squeeze().T,
+        origin='lower',
+        aspect='auto'
+    )
     
-    # sf.write('/data/tmp/pred_speech_rvae_'+ str(n+1) + '.wav', s_inv, fs)
+    divider2 = make_axes_locatable(ax2)
+    cax2 = divider2.append_axes("right", size="1.5%", pad=0.1) 
+    fig.colorbar(img2, cax=cax2)
+    cb2 = fig.colorbar(img2, cax=cax2)
+    cb2.ax.tick_params(labelsize=16)
+    ax2.set_xticks([])
+    ax2.tick_params(labelsize=16)
+    ax2.set_ylabel('latent dim.', fontsize=24)
+    ax2.set_title('Latent representation', fontsize=24)
     
-    plt.close()
+    # --- Bottom plot ---
+    img3 = librosa.display.specshow(
+        librosa.power_to_db(data_recon),
+        sr=fs,
+        hop_length=hop,
+        y_axis='linear',
+        x_axis='time',
+        cmap='magma',
+        ax=ax3
+    )
+    # ax3.set_cmap('magma')
+    img3.set_clim(c_min, c_max)
+    ax3.set_ylabel('frequency (Hz)', fontsize=24)
+    ax3.set_xlabel('time (s)', fontsize=24)
+    ax3.tick_params(labelsize=16)
+    divider3 = make_axes_locatable(ax3)
+    cax3 = divider3.append_axes("right", size="1.5%", pad=0.1) 
+    fig.colorbar(img3, cax=cax3)
+    cb3 = fig.colorbar(img3, cax=cax3)
+    cb3.ax.tick_params(labelsize=16)
+    ax3.set_title('Reconstructed spectrogram', fontsize=24)
+    
+    # fig.suptitle(model_name, fontsize=24)
+    fig.tight_layout()
+    
+    
+    figure_file = '/data/tmp/rec_speech_rvae_'+ str(n+1) + '.png'
+    fig.savefig(figure_file)
+    plt.close(fig)
+    
+    

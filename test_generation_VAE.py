@@ -6,6 +6,8 @@ Created on Mon Aug 24 10:14:22 2020
 @author: sleglaive
 """
 
+#%%
+
 import os
 import numpy as np
 import torch
@@ -19,15 +21,20 @@ import matplotlib
 # matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 
+plt.close('all')
+
 #%%
-model_dir = './saved_model/WSJ0_2020-08-12-21h00_SRNN_z_dim=16_F'
+model_dir = './saved_model/WSJ0_2019-07-15-10h21_origVAE_latent_dim=16_F'
+
 
 # find config file and training weight
-for file in os.listdir(model_dir):
-    if '.ini' in file:
-        cfg_file = os.path.join(model_dir, file)
-    if 'final_epoch' in file:
-        weight_file = os.path.join(model_dir, file)
+cfg_file = os.path.join(model_dir, 'config.ini')
+model_state = [f for f in os.listdir(model_dir) if f.endswith('.pt')]
+if len(model_state)==1:
+  model_state = model_state[0]
+else:
+  model_state = [tmp for tmp in model_state if 'converted' in tmp][0]
+weight_file = os.path.join(model_dir, model_state)
 
 # read config file
 cfg = myconf()
@@ -56,59 +63,40 @@ elif model_name == 'KVAE':
 # Load weight
 model.load_state_dict(torch.load(weight_file, map_location=device))
 model.eval()
+model = model.to(device)
 
 #%%
 
-def sample_srnn(seq_len=300, x_dim=257, z_dim=16, h_dim=128, sample_x=True):
 
-    h_t = torch.zeros(1,1,h_dim).to(device)
-    c_t = torch.zeros(1,1,h_dim).to(device)
-    # you can try different random init for z_t
-    z_t = torch.randn(1,1,z_dim).to(device)
-    x_t = torch.abs(torch.randn(1,1,x_dim).to(device))
+#%%
+
+def sample_vae(seq_len=300, x_dim=257, z_dim=16, sample_x=True):
     
-    x_all = np.zeros((seq_len, x_dim))
+    z = torch.randn(seq_len, 1, z_dim).to(device)
     
-    for t in np.arange(0,seq_len):
+    var_x = model.generation_x(z)
+    
+    if sample_x:
+        # sample the complex gaussian distribution
+        x_cplx_r = torch.sqrt(var_x/2)*torch.randn_like(var_x).to(device) 
+        x_cplx_i = torch.sqrt(var_x/2)*torch.randn_like(var_x).to(device) 
+        x = x_cplx_r**2 + x_cplx_i**2
+    else:
+        # or simply reinject the variance
+        x = var_x
         
-        # deterministic h
-        x_h = model.mlp_x_h(x_t)
-        _, (h_t, c_t) = model.rnn_h(x_h, (h_t, c_t))
+    x = x.detach().cpu().numpy()
+    
         
-        # generation z
-        hz_z = torch.cat((h_t, z_t), -1)
-        hz_z = model.mlp_hz_z(hz_z)
-        z_mean_p_t = model.prior_mean(hz_z)
-        z_logvar_p_t = model.prior_logvar(hz_z)
-        z_t = model.reparameterization(z_mean_p_t, z_logvar_p_t)
-        
-        # generation x
-        hz_x = torch.cat((h_t, z_t), -1)
-        hz_x = model.mlp_hz_x(hz_x)
-        logvar_x_t = model.gen_logvar(hz_x)
-        var_x_t = torch.exp(logvar_x_t)
-        
-        if sample_x:
-            # sample the complex gaussian distribution
-            x_t_cplx_r = torch.sqrt(var_x_t/2)*torch.randn_like(var_x_t).to(device) 
-            x_t_cplx_i = torch.sqrt(var_x_t/2)*torch.randn_like(var_x_t).to(device) 
-            x_t = x_t_cplx_r**2 + x_t_cplx_i**2
-        else:
-            # or simply reinject the variance
-            x_t = var_x_t
-        
-        
-        x_all[t,:] = x_t.detach().cpu().numpy()
-        
-    return x_all.T
+    return x.T
 
 #%% pure generation
 
-seq_len = 288
+seq_len = 150
+sample_x = False
 
 x_dim = cfg.getint('Network', 'x_dim')
 z_dim = cfg.getint('Network', 'z_dim')
-h_dim = cfg.getint('Network', 'dim_RNN_h')
 
 fs = cfg.getint('STFT', 'fs')
 wlen_sec = cfg.getfloat('STFT', 'wlen_sec')
@@ -120,10 +108,17 @@ hop = np.int(hop_percent*wlen) # hop size in samples
 nfft = wlen + int(zp_percent*wlen) # number of points of the discrete Fourier transform
 win = np.sin(np.arange(.5,wlen-.5+1)/wlen*np.pi) # sine analysis window
 
+
+
+
+#%%
+
 for n in np.arange(20):
 
-    power_spec = sample_srnn(seq_len=seq_len, x_dim=x_dim, z_dim=z_dim, 
-                             h_dim=h_dim, sample_x=False)
+    power_spec = sample_vae(seq_len=seq_len, x_dim=x_dim, z_dim=z_dim, 
+                             sample_x=False)
+    
+    power_spec = power_spec.squeeze()
     
     mag_spec = np.sqrt(power_spec)
     
@@ -154,18 +149,22 @@ for n in np.arange(20):
     plt.ylabel('frequency (Hz)', fontsize=24)
     plt.xlabel('time (s)', fontsize=24)
     
+    
+    # plt.clim((-30, 40))
+    
     plt.colorbar()
     
     plt.tight_layout()
+    
     
     # plt.subplot(2,1,2)
     # time_axis = np.arange(0,s_inv.shape[0])/fs
     # plt.plot(time_axis, s_inv) 
     # plt.xlim([time_axis[0], time_axis[-1]])
     
-    figure_file = '/data/tmp/gen_speech_srnn_'+ str(n+1) + '.png'
+    figure_file = '/data/tmp/gen_speech_vae_'+ str(n+1) + '.png'
     plt.savefig(figure_file) 
     
-    sf.write('/data/tmp/gen_speech_srnn_'+ str(n+1) + '.wav', s_inv, fs)
+    sf.write('/data/tmp/gen_speech_vae_'+ str(n+1) + '.wav', s_inv, fs)
     
     plt.show()

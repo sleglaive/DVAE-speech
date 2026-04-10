@@ -6,6 +6,8 @@ Created on Mon Aug 24 10:14:22 2020
 @author: sleglaive
 """
 
+#%%
+
 import os
 import numpy as np
 import torch
@@ -16,7 +18,7 @@ import soundfile as sf
 from dvae.model import build_VAE, build_DKF, build_KVAE, build_STORN, build_VRNN, build_SRNN, build_RVAE, build_DSAE
 
 import matplotlib
-matplotlib.use('Agg')
+# matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 
 plt.close('all')
@@ -61,6 +63,7 @@ elif model_name == 'KVAE':
 # Load weight
 model.load_state_dict(torch.load(weight_file, map_location=device))
 model.eval()
+model = model.to(device)
 
 #%%
 
@@ -69,7 +72,7 @@ model.eval()
 
 def sample_rvae(seq_len=300, x_dim=257, z_dim=16, h_dim=128, sample_x=True):
     
-    z = torch.randn(seq_len, 1, z_dim)
+    z = torch.randn(seq_len, 1, z_dim).to(device)
     
     # 1. z_t to h_t
     z_h = model.mlp_z_h(z)
@@ -98,7 +101,7 @@ def sample_rvae(seq_len=300, x_dim=257, z_dim=16, h_dim=128, sample_x=True):
 
 #%% pure generation
 
-seq_len = 288
+seq_len = 150
 sample_x = False
 
 x_dim = cfg.getint('Network', 'x_dim')
@@ -130,24 +133,46 @@ for n in np.arange(20):
     
     
     s_inv = librosa.griffinlim(mag_spec, n_iter=100, hop_length=hop, 
-                               win_length=wlen, window=win)   
+                                win_length=wlen, window=win)   
     
     
-    plt.figure(figsize=(20,15))
+    plt.figure(figsize=(15,7))
     
-    plt.subplot(2,1,1)
+    # plt.subplot(2,1,1)
     librosa.display.specshow(librosa.power_to_db(power_spec), sr=fs, 
                                                  hop_length=hop, 
                                                  y_axis='linear', 
                                                  x_axis='time')
-    plt.subplot(2,1,2)
-    time_axis = np.arange(0,s_inv.shape[0])/fs
-    plt.plot(time_axis, s_inv) 
-    plt.xlim([time_axis[0], time_axis[-1]])
     
-    figure_file = '/data/tmp/gen_speech_RVAE/gen_speech_rvae_'+ str(n+1) + '.png'
+    plt.set_cmap('magma')
+
+    axes = plt.gca()
+    # axes.set_ylim([0,4000])
+    
+    plt.xticks(fontsize=16)
+    plt.yticks(fontsize=16)
+    
+    plt.title(model_name, fontsize=24)
+    
+    plt.ylabel('frequency (Hz)', fontsize=24)
+    plt.xlabel('time (s)', fontsize=24)
+    
+    
+    # plt.clim((-30, 40))
+    
+    plt.colorbar()
+    
+    plt.tight_layout()
+    
+    
+    # plt.subplot(2,1,2)
+    # time_axis = np.arange(0,s_inv.shape[0])/fs
+    # plt.plot(time_axis, s_inv) 
+    # plt.xlim([time_axis[0], time_axis[-1]])
+    
+    figure_file = '/data/tmp/gen_speech_rvae_'+ str(n+1) + '.png'
     plt.savefig(figure_file) 
     
-    sf.write('/data/tmp/gen_speech_RVAE/gen_speech_rvae_'+ str(n+1) + '.wav', s_inv, fs)
+    sf.write('/data/tmp/gen_speech_rvae_'+ str(n+1) + '.wav', s_inv, fs)
     
-    plt.close()
+    plt.show()
