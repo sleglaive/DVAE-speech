@@ -163,7 +163,7 @@ for n in np.arange(n_files):
     c_min = c_max - 80
     
     
-    fig = plt.figure(figsize=(20, 15))
+    fig = plt.figure(figsize=(10, 15))
     gs = fig.add_gridspec(nrows=3, ncols=1, height_ratios=[3, 1, 3])
     
     ax1 = fig.add_subplot(gs[0])
@@ -196,7 +196,8 @@ for n in np.arange(n_files):
     img2 = ax2.imshow(
         z_mean.detach().cpu().numpy().squeeze().T,
         origin='lower',
-        aspect='auto'
+        aspect='auto',
+        cmap='magma'
     )
     
     divider2 = make_axes_locatable(ax2)
@@ -235,7 +236,7 @@ for n in np.arange(n_files):
     fig.tight_layout()
     
     
-    figure_file = '/data/tmp/rec_speech_srnn_'+ str(n+1) + '.png'
+    figure_file = '/data/tmp/rec_speech_srnn_'+ str(n+1) + '.pdf'
     fig.savefig(figure_file)
     plt.close(fig)
     

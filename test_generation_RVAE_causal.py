@@ -24,7 +24,7 @@ import matplotlib.pyplot as plt
 plt.close('all')
 
 #%%
-model_dir = './saved_model/WSJ0_2019-07-15-10h01_origRVAE_NonCausal_latent_dim=16_F'
+model_dir = './saved_model/WSJ0_2019-07-15-10h14_origRVAE-Causal_latent_dim=16_F'
 #model_dir = './saved_model/WSJ0_2020-09-29-14h48_RVAE-NonCausal_z_dim=16'
 
 # find config file and training weight
@@ -171,9 +171,9 @@ for n in np.arange(40):
     # plt.plot(time_axis, s_inv) 
     # plt.xlim([time_axis[0], time_axis[-1]])
     
-    figure_file = '/data/tmp/gen_speech_rvae_'+ str(n+1) + '.pdf'
+    figure_file = '/data/tmp/gen_speech_rvae_causal_'+ str(n+1) + '.pdf'
     plt.savefig(figure_file) 
     
-    sf.write('/data/tmp/gen_speech_rvae_'+ str(n+1) + '.wav', s_inv, fs)
+    sf.write('/data/tmp/gen_speech_rvae_causal_'+ str(n+1) + '.wav', s_inv, fs)
     
     plt.close()

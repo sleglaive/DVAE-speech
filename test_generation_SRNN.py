@@ -120,20 +120,21 @@ hop = np.int(hop_percent*wlen) # hop size in samples
 nfft = wlen + int(zp_percent*wlen) # number of points of the discrete Fourier transform
 win = np.sin(np.arange(.5,wlen-.5+1)/wlen*np.pi) # sine analysis window
 
-for n in np.arange(20):
+for n in np.arange(40):
 
     power_spec = sample_srnn(seq_len=seq_len, x_dim=x_dim, z_dim=z_dim, 
                              h_dim=h_dim, sample_x=False)
     
     mag_spec = np.sqrt(power_spec)
     
-    
+    c_max = np.max(10*np.log10(power_spec))
+    c_min = c_max - 80
     
     s_inv = librosa.griffinlim(mag_spec, n_iter=100, hop_length=hop, 
                                 win_length=wlen, window=win)   
     
     
-    plt.figure(figsize=(15,7))
+    plt.figure(figsize=(10,7))
     
     # plt.subplot(2,1,1)
     librosa.display.specshow(librosa.power_to_db(power_spec), sr=fs, 
@@ -149,13 +150,15 @@ for n in np.arange(20):
     plt.xticks(fontsize=16)
     plt.yticks(fontsize=16)
     
-    plt.title(model_name, fontsize=24)
+    # plt.title(model_name, fontsize=24)
     
     plt.ylabel('frequency (Hz)', fontsize=24)
     plt.xlabel('time (s)', fontsize=24)
     
     plt.colorbar()
     
+    plt.clim((c_min, c_max))
+
     plt.tight_layout()
     
     # plt.subplot(2,1,2)
@@ -163,9 +166,9 @@ for n in np.arange(20):
     # plt.plot(time_axis, s_inv) 
     # plt.xlim([time_axis[0], time_axis[-1]])
     
-    figure_file = '/data/tmp/gen_speech_srnn_'+ str(n+1) + '.png'
+    figure_file = '/data/tmp/gen_speech_srnn_'+ str(n+1) + '.pdf'
     plt.savefig(figure_file) 
     
     sf.write('/data/tmp/gen_speech_srnn_'+ str(n+1) + '.wav', s_inv, fs)
     
-    plt.show()
+    plt.close()

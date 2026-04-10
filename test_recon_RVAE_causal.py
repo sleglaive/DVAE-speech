@@ -24,8 +24,9 @@ plt.close('all')
 
 #%%
 
-model_dir = './saved_model/WSJ0_2019-07-15-10h21_origVAE_latent_dim=16_F'
-
+model_dir = './saved_model/WSJ0_2019-07-15-10h14_origRVAE-Causal_latent_dim=16_F'
+#model_dir = './saved_model/WSJ0_2019-07-15-10h01_origRVAE_NonCausal_latent_dim=16_F'
+# model_dir = './saved_model/WSJ0_2020-09-29-14h48_RVAE-NonCausal_z_dim=16'
 
 # find config file and training weight
 cfg_file = os.path.join(model_dir, 'config.ini')
@@ -69,6 +70,7 @@ model = model.to(device)
 
 x_dim = cfg.getint('Network', 'x_dim')
 z_dim = cfg.getint('Network', 'z_dim')
+h_dim = cfg.getint('Network', 'dim_RNN_h')
 
 fs = cfg.getint('STFT', 'fs')
 wlen_sec = cfg.getfloat('STFT', 'wlen_sec')
@@ -219,7 +221,7 @@ for n in np.arange(n_files):
     fig.tight_layout()
     
     
-    figure_file = '/data/tmp/rec_speech_vae_'+ str(n+1) + '.pdf'
+    figure_file = '/data/tmp/rec_speech_rvae_causal_'+ str(n+1) + '.pdf'
     fig.savefig(figure_file)
     plt.close(fig)
     
