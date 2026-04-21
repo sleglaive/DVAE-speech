@@ -104,7 +104,7 @@ def sample_srnn(seq_len=300, x_dim=257, z_dim=16, h_dim=128, sample_x=True):
 
 #%% pure generation
 
-seq_len = 288
+seq_len = 150
 
 x_dim = cfg.getint('Network', 'x_dim')
 z_dim = cfg.getint('Network', 'z_dim')
