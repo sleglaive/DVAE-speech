@@ -20,9 +20,9 @@ import matplotlib
 import matplotlib.pyplot as plt
 
 #%%
-model_dir = './saved_model/WSJ0_2020-08-12-21h00_SRNN_z_dim=16_F'
+# model_dir = './saved_model/WSJ0_2020-08-12-21h00_SRNN_z_dim=16_F'
 # model_dir = '/data/recherche/python/DVAE-speech/saved_model/zenodo/WSJ0_2020-11-11-23h31_SRNN_z_dim=16'
-# model_dir = '/data/recherche/python/DVAE-speech/saved_model/zenodo/WSJ0_2020-12-12-20h54_SRNN-ss_z_dim=16'
+model_dir = '/data/recherche/python/DVAE-speech/saved_model/zenodo/WSJ0_2020-12-12-20h54_SRNN-ss_z_dim=16'
 
 # find config file and training weight
 for file in os.listdir(model_dir):

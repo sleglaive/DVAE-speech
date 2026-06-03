@@ -24,7 +24,10 @@ plt.close('all')
 
 #%%
 
-model_dir = './saved_model/WSJ0_2020-08-12-21h00_SRNN_z_dim=16_F'
+model_ckpt = "WSJ0_2020-08-12-21h00_SRNN_z_dim=16_F"
+# model_ckpt = "WSJ0_2020-11-11-23h31_SRNN_z_dim=16"
+# model_ckpt = "WSJ0_2020-12-12-20h54_SRNN-ss_z_dim=16"
+model_dir = './saved_model/' + model_ckpt
 
 
 # find config file and training weight
@@ -86,7 +89,7 @@ win = np.sin(np.arange(.5,wlen-.5+1)/wlen*np.pi) # sine analysis window
 
 file_list = librosa.util.find_files('/data/datasets/clean_speech/wsj0_si_dt_05', ext='wav')
 
-n_files = 20
+n_files = 5
 
 for n in np.arange(n_files):
     
@@ -158,6 +161,14 @@ for n in np.arange(n_files):
     data_recon = data_recon.T
     data_orig = data_orig.cpu().numpy()
     
+    X_recon = np.sqrt(data_recon)*np.exp(1j*np.angle(X))
+    x_recon = librosa.istft(X_recon, hop_length=hop, win_length=wlen, window=win)
+    
+    scale = 1/(np.maximum(np.max(np.abs(x_recon)),np.max(np.abs(x_orig))))*0.9
+    
+    
+    sf.write('/data/tmp/rec_speech_' + model_name + '_' + str(n+1) + '.wav', scale*x_recon, fs)
+    sf.write('/data/tmp/orig_speech_' + model_name + '_' + str(n+1) + '.wav', scale*x_orig, fs)
 
     c_max = np.max((np.max(10*np.log10(data_orig)), np.max(10*np.log10(data_recon))))
     c_min = c_max - 80
@@ -236,7 +247,7 @@ for n in np.arange(n_files):
     fig.tight_layout()
     
     
-    figure_file = '/data/tmp/rec_speech_srnn_'+ str(n+1) + '.pdf'
+    figure_file = '/data/tmp/rec_speech_' + model_name + '_' + str(n+1) + '.pdf'
     fig.savefig(figure_file)
     plt.close(fig)
     
